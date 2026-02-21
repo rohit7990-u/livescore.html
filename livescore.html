@@ -1,49 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Live Cricket Score</title>
+
 <style>
 body {
+  margin: 0;
   background: transparent;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 500px;
+  background: #0f172a;
   color: white;
-  font-family: Arial;
-}
-.scoreboard {
-  background: #111;
   padding: 20px;
-  border-radius: 10px;
-  width: 400px;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
 }
+
 h2 {
   margin: 0;
+  font-size: 22px;
+}
+
+.score {
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.status {
+  margin-top: 10px;
+  font-size: 16px;
+  color: #38bdf8;
+}
+
+.footer {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #aaa;
 }
 </style>
+
 </head>
 <body>
 
-<div class="scoreboard">
-  <h2 id="match">Loading...</h2>
-  <p id="score"></p>
-  <p id="status"></p>
+<div class="container">
+  <h2 id="matchName">Loading match...</h2>
+  <div class="score" id="matchScore">Please wait...</div>
+  <div class="status" id="matchStatus"></div>
+  <div class="footer">Auto refresh every 15 sec</div>
 </div>
 
 <script>
-const apiKey = "https://api.cricapi.com/v1/series?apikey=[your api key]&offset=0";
+const apiKey = "YOUR_API_KEY_HERE";
 
-async function fetchScore() {
-  const response = await fetch(`https://api.cricapi.com/v1/currentMatches?apikey=${apiKey}`);
-  const data = await response.json();
+async function getLiveScore() {
+  try {
+    const response = await fetch(`https://api.cricapi.com/v1/currentMatches?apikey=${apiKey}&offset=0`);
+    const data = await response.json();
 
-  if(data.data && data.data.length > 0) {
-    const match = data.data[0];
-    document.getElementById("match").innerText = match.name;
-    document.getElementById("score").innerText = match.score ? match.score[0].r + "/" + match.score[0].w + " (" + match.score[0].o + ")" : "Score not available";
-    document.getElementById("status").innerText = match.status;
+    if (data.data && data.data.length > 0) {
+
+      let liveMatch = data.data.find(match => match.matchStarted === true);
+
+      if (!liveMatch) {
+        liveMatch = data.data[0];
+      }
+
+      document.getElementById("matchName").innerText = liveMatch.name;
+
+      if (liveMatch.score && liveMatch.score.length > 0) {
+        let scoreText = "";
+        liveMatch.score.forEach(inning => {
+          scoreText += `${inning.r}/${inning.w} (${inning.o} overs)\n`;
+        });
+        document.getElementById("matchScore").innerText = scoreText;
+      } else {
+        document.getElementById("matchScore").innerText = "Score not available yet";
+      }
+
+      document.getElementById("matchStatus").innerText = liveMatch.status;
+
+    } else {
+      document.getElementById("matchName").innerText = "No Live Matches";
+      document.getElementById("matchScore").innerText = "";
+      document.getElementById("matchStatus").innerText = "";
+    }
+
+  } catch (error) {
+    document.getElementById("matchName").innerText = "Error loading data";
   }
 }
 
-fetchScore();
-setInterval(fetchScore, 15000);
+getLiveScore();
+setInterval(getLiveScore, 15000);
 </script>
 
 </body>
